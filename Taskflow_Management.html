@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taskflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef4f5;--surface:#fff;--ink:#0c2230;--muted:#5b7080;--line:#dbe5e9;
+  --brand:#0e7c86;--brand-ink:#fff;--side:#0c2230;
+  --todo:#9db0bb;--prog:#f0a93b;--done:#2fa36b;--danger:#e5483d;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0a141c;--surface:#112431;--ink:#e6f0f4;--muted:#8fa6b3;--line:#1f3a4a;
+  --brand:#3cc2cc;--brand-ink:#04222a;--side:#07101a;--todo:#4a6475;--danger:#ff7468;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "DM Sans","Segoe UI",system-ui,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+[hidden]{display:none!important}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.02em}
+ul{list-style:none;margin:0;padding:0}
+.c-done{background:var(--done)}.c-prog{background:var(--prog)}.c-todo{background:var(--todo)}
+
+/* controls */
+label{display:flex;flex-direction:column;gap:5px;font-size:.85rem;font-weight:500;color:var(--muted)}
+input,select,textarea{width:100%;padding:11px 13px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+input:focus,select:focus,textarea:focus{border-color:var(--brand)}
+textarea{resize:vertical}
+.btn{border:1px solid var(--line);background:var(--surface);padding:10px 18px;border-radius:10px;cursor:pointer;font-weight:600;white-space:nowrap}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn:hover{filter:brightness(.95)}
+.link{background:none;border:0;padding:4px 0;color:var(--brand);cursor:pointer;font-size:.9rem;font-weight:500}
+.link:hover{text-decoration:underline}.link.danger{color:var(--danger)}
+.error{color:var(--danger);margin:0;font-size:.9rem}
+
+/* ---------- login ---------- */
+.auth{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
+.hero{background:var(--side);color:#fff;padding:40px 48px;display:flex;flex-direction:column;justify-content:space-between;gap:32px}
+.logo{font:700 1.4rem var(--display);display:flex;align-items:center;gap:10px}
+.logo svg{width:26px;height:26px}
+.hero h2{font-size:clamp(2rem,4vw,3.2rem);line-height:1.05;max-width:12ch}
+.hero p{color:#a9c2cc;max-width:38ch;margin:16px 0 28px}
+.peek{display:flex;align-items:center;gap:20px;background:rgba(255,255,255,.07);border-radius:18px;padding:20px;max-width:420px}
+.peek ul{display:grid;gap:10px;font-size:.92rem;flex:1}
+.peek li{display:flex;align-items:center;gap:10px}
+.peek i{width:9px;height:9px;border-radius:50%;flex:none}
+.hero small{color:#7f9aa6}
+.panel{display:grid;place-items:center;padding:32px 20px}
+.panel .box{width:100%;max-width:380px}
+.panel h1{font-size:1.9rem;margin-bottom:6px}
+.panel .sub{color:var(--muted);margin:0 0 22px}
+.switch{display:grid;grid-template-columns:1fr 1fr;background:var(--line);border-radius:12px;padding:4px;margin-bottom:20px}
+.switch button{border:0;background:transparent;padding:9px;border-radius:9px;cursor:pointer;font-weight:600;color:var(--muted)}
+.switch button.on{background:var(--surface);color:var(--ink)}
+.panel form{display:grid;gap:14px}
+.note{font-size:.8rem;color:var(--muted);margin-top:18px}
+
+/* ---------- app shell ---------- */
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--side);color:#cfe0e6;padding:24px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.side .logo{color:#fff;padding:0 10px 22px}
+.nav{display:flex;align-items:center;gap:12px;padding:11px 12px;border:0;background:transparent;border-radius:10px;color:inherit;cursor:pointer;font-weight:500;text-align:left;width:100%}
+.nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.nav:hover{background:rgba(255,255,255,.07)}
+.nav.on{background:var(--brand);color:var(--brand-ink)}
+.me{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px;border-top:1px solid rgba(255,255,255,.1)}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font-weight:700;flex:none}
+.me b{display:block;color:#fff;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.me .link{color:#8fd3da;padding:0}
+.main{padding:28px clamp(16px,4vw,44px) 56px;max-width:1100px;width:100%}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.head h1{font-size:clamp(1.6rem,3vw,2.2rem)}
+.head p{margin:2px 0 0;color:var(--muted)}
+.head .right{display:flex;align-items:center;gap:14px}
+.live{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--todo)}
+.live.on::before{background:var(--done)}
+.mobile-only{display:none}
+
+/* ---------- dashboard ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px}
+.card h3{font-size:1.05rem;margin-bottom:14px}
+.top{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-bottom:16px}
+.ring-card{display:flex;align-items:center;gap:24px}
+.ring{position:relative;width:150px;height:150px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:13;stroke-linecap:butt;transition:stroke-dasharray .7s ease,stroke-dashoffset .7s ease}
+.ring .mid{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.mid strong{font:700 2.1rem/1 var(--display)}
+.mid span{font-size:.78rem;color:var(--muted)}
+.ring-card ul{display:grid;gap:8px;font-size:.92rem}
+.ring-card li{display:flex;align-items:center;gap:8px}
+.ring-card i{width:10px;height:10px;border-radius:3px;flex:none}
+.ring-card .sum{color:var(--muted);margin:0 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{border-radius:14px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--todo)}
+.stat.p{border-left-color:var(--prog)}.stat.d{border-left-color:var(--done)}.stat.o{border-left-color:var(--danger)}
+.stat strong{display:block;font:700 2.2rem/1.1 var(--display)}
+.stat span{color:var(--muted);font-size:.9rem}
+.cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+.due li{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
+.due li:first-child{border-top:0;padding-top:0}
+.due b{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.due small{color:var(--muted);white-space:nowrap}
+.due small.late{color:var(--danger);font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--todo)}
+.dot.high{background:var(--danger)}.dot.medium{background:var(--prog)}.dot.low{background:var(--done)}
+.prio{display:grid;gap:14px}
+.prio .l{display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:5px}
+.prio .t{height:9px;background:var(--line);border-radius:5px;overflow:hidden}
+.prio .t i{display:block;height:100%;border-radius:5px;transition:width .5s ease}
+.empty{color:var(--muted);text-align:center;padding:26px 0;margin:0}
+
+/* ---------- tasks list ---------- */
+.toolbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;background:var(--line);padding:4px;border-radius:12px}
+.tabs button{border:0;background:transparent;padding:7px 14px;border-radius:9px;cursor:pointer;color:var(--muted);font-weight:600}
+.tabs button.on{background:var(--surface);color:var(--ink)}
+.search{max-width:240px}
+.list{display:grid;gap:10px}
+.task{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;padding:16px 18px}
+.task.done h3{text-decoration:line-through;color:var(--muted)}
+.task .dot{margin-top:8px}
+.task h3{font-size:1.02rem;font-family:"DM Sans",sans-serif;font-weight:600;letter-spacing:0;overflow-wrap:anywhere}
+.task p{margin:2px 0 0;color:var(--muted);overflow-wrap:anywhere;white-space:pre-wrap}
+.meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:.82rem;color:var(--muted)}
+.late{color:var(--danger);font-weight:600}
+.side-r{display:grid;gap:6px;justify-items:end}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:6px 11px;font-size:.82rem;cursor:pointer;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--brand);color:var(--brand-ink);font-weight:600}
+.acts{display:flex;gap:14px;align-items:center}
+.clear{margin-top:18px;color:var(--danger)}
+
+/* ---------- board ---------- */
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
+.col{background:color-mix(in srgb,var(--line) 55%,transparent);border-radius:16px;padding:12px;min-height:200px}
+.col.over{outline:2px dashed var(--brand)}
+.col h3{font-size:.95rem;padding:4px 6px 12px;display:flex;justify-content:space-between;align-items:center}
+.col h3 span{font:500 .8rem "DM Sans",sans-serif;background:var(--surface);border-radius:99px;padding:1px 10px;color:var(--muted)}
+.col ul{display:grid;gap:10px}
+.kcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:grab}
+.kcard.drag{opacity:.4}
+.kcard b{display:block;font-weight:600;overflow-wrap:anywhere}
+.kcard .meta{margin:6px 0 8px;align-items:center}
+.kcard select{padding:6px 8px;font-size:.82rem}
+
+/* ---------- dialog ---------- */
+dialog{border:0;border-radius:18px;padding:26px;width:min(460px,calc(100vw - 32px));background:var(--surface);color:var(--ink);box-shadow:0 24px 60px rgba(5,20,30,.35)}
+dialog::backdrop{background:rgba(5,20,30,.55)}
+dialog form{display:grid;gap:14px}
+dialog h2{font-size:1.4rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
+
+/* ---------- responsive ---------- */
+@media (max-width:900px){.top,.cols,.board{grid-template-columns:1fr}}
+@media (max-width:800px){
+  .auth{grid-template-columns:1fr}
+  .hero{padding:28px 24px;gap:20px}.hero h2{max-width:none}.peek,.hero small{display:none}.hero p{margin-bottom:0}
+  .shell{grid-template-columns:1fr}
+  .side{position:fixed;inset:auto 0 0 0;height:auto;flex-direction:row;padding:6px 8px;z-index:5;gap:4px;border-top:1px solid rgba(255,255,255,.1)}
+  .side .logo,.me{display:none}
+  .nav{flex-direction:column;gap:2px;font-size:.75rem;padding:8px 4px;justify-content:center;align-items:center;text-align:center}
+  .main{padding-bottom:96px}
+  .mobile-only{display:inline-block}
+  .ring-card{flex-direction:column;align-items:flex-start}
+  .task{grid-template-columns:auto 1fr}
+  .side-r{grid-column:1/-1;justify-items:stretch}
+  .seg{display:flex}.seg button{flex:1;padding:10px 4px}
+  .acts{justify-content:flex-end}
+  .search{max-width:none;flex:1 1 100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div class="auth" id="authView" hidden>
+  <aside class="hero">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#5fe0a5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>Taskflow</div>
+    <div>
+      <h2>Get the week under control.</h2>
+      <p>Capture tasks, move them forward, and watch your progress add up.</p>
+      <div class="peek">
+        <svg viewBox="0 0 120 120" width="92" height="92" fill="none" stroke-width="13"><circle cx="60" cy="60" r="48" stroke="rgba(255,255,255,.15)"/><circle cx="60" cy="60" r="48" stroke="#5fe0a5" stroke-dasharray="200 102" transform="rotate(-90 60 60)"/></svg>
+        <ul>
+          <li><i style="background:#5fe0a5"></i>Finish internship report</li>
+          <li><i style="background:#f0a93b"></i>Review pull request</li>
+          <li><i style="background:#9db0bb"></i>Plan next sprint</li>
+        </ul>
+      </div>
+    </div>
+    <small>Built for students, interns and small teams.</small>
+  </aside>
+  <main class="panel"><div class="box">
+    <h1 id="aTitle">Welcome back</h1>
+    <p class="sub" id="aSub">Sign in to see your tasks.</p>
+    <div class="switch"><button id="tabIn" class="on" type="button">Sign in</button><button id="tabUp" type="button">Create account</button></div>
+    <form id="authForm" novalidate>
+      <label id="nameField" hidden>Name<input id="aName" autocomplete="name"></label>
+      <label>Email<input id="aEmail" type="email" autocomplete="email"></label>
+      <label>Password<input id="aPass" type="password" autocomplete="current-password"></label>
+      <p class="error" id="authError" role="alert" hidden></p>
+      <button class="btn primary" id="authSubmit">Sign in</button>
+    </form>
+    <p class="note">Demo build: accounts are stored in this browser only.</p>
+  </div></main>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="shell" id="appView" hidden>
+  <nav class="side" aria-label="Main">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#5fe0a5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>Taskflow</div>
+    <div id="navBtns" style="display:contents"></div>
+    <div class="me"><span class="avatar" id="avatar"></span><div><b id="uName"></b><button class="link" id="signOut">Sign out</button></div></div>
+  </nav>
+
+  <main class="main">
+    <header class="head">
+      <div><h1 id="vTitle"></h1><p id="vSub"></p></div>
+      <div class="right">
+        <span class="live" id="live">Live</span>
+        <button class="link mobile-only" id="signOutM">Sign out</button>
+        <button class="btn primary" id="newBtn">+ New task</button>
+      </div>
+    </header>
+
+    <!-- dashboard -->
+    <section id="v-dashboard">
+      <div class="top">
+        <div class="card ring-card">
+          <div class="ring">
+            <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" stroke="var(--line)"/><circle id="rDone" cx="60" cy="60" r="52" stroke="var(--done)"/><circle id="rProg" cx="60" cy="60" r="52" stroke="var(--prog)"/></svg>
+            <div class="mid"><strong id="pct">0%</strong><span>complete</span></div>
+          </div>
+          <div>
+            <h3>Overall progress</h3>
+            <p class="sum" id="sum"></p>
+            <ul><li><i class="c-done"></i><span id="lDone"></span></li><li><i class="c-prog"></i><span id="lProg"></span></li><li><i class="c-todo"></i><span id="lTodo"></span></li></ul>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong id="sTodo">0</strong><span>To do</span></div>
+          <div class="stat p"><strong id="sProg">0</strong><span>In progress</span></div>
+          <div class="stat d"><strong id="sDone">0</strong><span>Done</span></div>
+          <div class="stat o"><strong id="sLate">0</strong><span>Overdue</span></div>
+        </div>
+      </div>
+      <div class="cols">
+        <div class="card"><h3>Due soon</h3><ul class="due" id="dueList"></ul></div>
+        <div class="card"><h3>Open tasks by priority</h3><div class="prio" id="prio"></div></div>
+      </div>
+    </section>
+
+    <!-- list -->
+    <section id="v-tasks" hidden>
+      <div class="toolbar">
+        <div class="tabs" id="tabs" role="tablist"></div>
+        <input class="search" id="search" type="search" placeholder="Search tasks" aria-label="Search tasks">
+      </div>
+      <ul class="list" id="list"></ul>
+      <p class="empty" id="empty" hidden></p>
+      <button class="btn clear" id="clearDone" hidden>Clear completed tasks</button>
+    </section>
+
+    <!-- board -->
+    <section id="v-board" hidden><div class="board" id="board"></div></section>
+  </main>
+</div>
+
+<!-- ===== ADD / EDIT DIALOG ===== -->
+<dialog id="dlg">
+  <form id="taskForm" novalidate>
+    <h2 id="dTitle">New task</h2>
+    <label>Title<input id="fTitle" maxlength="120" placeholder="What needs doing?"></label>
+    <label>Notes<textarea id="fDesc" rows="3" placeholder="Optional"></textarea></label>
+    <div class="two">
+      <label>Priority<select id="fPriority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+      <label>Due date<input type="date" id="fDue"></label>
+    </div>
+    <p class="error" id="formError" role="alert" hidden></p>
+    <div class="dfoot"><button type="button" class="btn" id="fCancel">Cancel</button><button class="btn primary" id="fSubmit">Add task</button></div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
+};
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+// Builds nodes with textContent so typed text can never inject HTML.
+function h(tag, props = {}, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) el.setAttribute(k, v === true ? "" : v);
+  }
+  el.append(...kids.filter((k) => k != null && k !== false));
+  return el;
+}
+
+const STATUSES = [["todo", "To do"], ["in_progress", "In progress"], ["done", "Done"]];
+const FILTERS = [["all", "All"], ...STATUSES];
+const VIEWS = {
+  dashboard: ["Dashboard", "M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"],
+  tasks: ["My tasks", "M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"],
+  board: ["Board", "M4 4h5v16H4zM10 4h5v10h-5zM16 4h4v13h-4z"],
+};
+let user = null, tasks = [], view = "dashboard", filter = "all", query = "", editingId = null, signup = false;
+
+/* ---------- authentication (demo: stored in this browser) ---------- */
+async function hashPw(pw, salt) {
+  if (window.crypto?.subtle) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + pw));
+    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  let x = 0; for (const c of salt + pw) x = (x * 31 + c.charCodeAt(0)) | 0; return String(x);
+}
+async function register(name, email, pw) {
+  name = name.trim(); email = email.trim().toLowerCase();
+  if (!name) throw new Error("Enter your name.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
+  if (pw.length < 8) throw new Error("Use a password with at least 8 characters.");
+  const users = store.get("tf_users", {});
+  if (users[email]) throw new Error("An account with this email already exists.");
+  const salt = uid();
+  users[email] = { name, salt, hash: await hashPw(pw, salt) };
+  store.set("tf_users", users);
+  return { email, name };
+}
+async function login(email, pw) {
+  email = email.trim().toLowerCase();
+  const r = store.get("tf_users", {})[email];
+  if (!r || (await hashPw(pw, r.salt)) !== r.hash) throw new Error("Email or password is incorrect.");
+  return { email, name: r.name };
+}
+function startSession(u) { user = u; store.set("tf_session", u); tasks = load(); view = "dashboard"; showView(); render(); }
+function signOut() { user = null; tasks = []; localStorage.removeItem("tf_session"); channel?.postMessage({ type: "auth" }); showView(); }
+
+/* ---------- tasks (each account has its own private list) ---------- */
+const key = () => `tf_tasks:${user.email}`;
+const load = () => store.get(key(), []);
+function save() { store.set(key(), tasks); channel?.postMessage({ type: "tasks", email: user.email }); }
+const createTask = (v) => { const n = new Date().toISOString(); tasks.unshift({ id: uid(), status: "todo", createdAt: n, updatedAt: n, ...v }); save(); };
+const updateTask = (id, p) => { tasks = tasks.map((t) => (t.id === id ? { ...t, ...p, updatedAt: new Date().toISOString() } : t)); save(); };
+const deleteTask = (id) => { tasks = tasks.filter((t) => t.id !== id); save(); };
+
+/* ---------- real-time sync across tabs ---------- */
+const channel = "BroadcastChannel" in window ? new BroadcastChannel("taskflow") : null;
+function checkSession() {
+  const s = store.get("tf_session", null);
+  if (!s && user) { user = null; tasks = []; showView(); } else if (s && !user) startSession(s);
+}
+if (channel) channel.onmessage = ({ data }) => {
+  if (data.type === "auth") checkSession();
+  else if (user && data.email === user.email) { tasks = load(); render(); }
+};
+window.addEventListener("storage", (e) => { if (!channel && user && e.key === key()) { tasks = load(); render(); } });
+
+/* ---------- helpers ---------- */
+const today = () => new Date(new Date().toDateString());
+function due(iso, done) {
+  const d = Math.round((new Date(iso + "T00:00:00") - today()) / 864e5);
+  if (!done && d < 0) return { t: `Overdue by ${-d} day${d === -1 ? "" : "s"}`, late: true };
+  const label = d === 0 ? "Due today" : d === 1 ? "Due tomorrow" : "Due " + new Date(iso + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return { t: label, late: false };
+}
+const counts = () => {
+  const c = { todo: 0, in_progress: 0, done: 0, late: 0, high: 0, medium: 0, low: 0 };
+  tasks.forEach((t) => { c[t.status]++; if (t.status !== "done") { c[t.priority]++; if (t.dueDate && new Date(t.dueDate + "T00:00:00") < today()) c.late++; } });
+  return c;
+};
+
+/* ---------- views ---------- */
+function showView() {
+  $("authView").hidden = !!user; $("appView").hidden = !user;
+  if (!user) return;
+  $("uName").textContent = user.name; $("avatar").textContent = user.name.trim()[0].toUpperCase();
+  $("live").classList.toggle("on", !!channel); $("live").textContent = channel ? "Live" : "Sync unavailable";
+  $("navBtns").replaceChildren(...Object.entries(VIEWS).map(([id, [label, path]]) => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", path); svg.append(p);
+    return h("button", { class: "nav" + (view === id ? " on" : ""), "aria-current": view === id ? "page" : null, onclick: () => { view = id; showView(); render(); } }, svg, label);
+  }));
+  Object.keys(VIEWS).forEach((id) => ($("v-" + id).hidden = id !== view));
+  $("vTitle").textContent = view === "dashboard" ? greeting() : VIEWS[view][0];
+  $("vSub").textContent = view === "dashboard" ? new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })
+    : view === "tasks" ? "Everything you have created, in one place." : "Drag cards between columns to update their status.";
+}
+function greeting() {
+  const hr = new Date().getHours();
+  return `Good ${hr < 12 ? "morning" : hr < 18 ? "afternoon" : "evening"}, ${user.name.split(" ")[0]}`;
+}
+
+function render() {
+  if (!user) return;
+  ({ dashboard: renderDashboard, tasks: renderList, board: renderBoard })[view]();
+}
+
+function renderDashboard() {
+  const c = counts(), total = tasks.length, C = 2 * Math.PI * 52;
+  const dl = (c.done / (total || 1)) * C, pl = (c.in_progress / (total || 1)) * C;
+  const arc = (el, len, off) => { el.style.strokeDasharray = `${len} ${C - len}`; el.style.strokeDashoffset = -off; };
+  arc($("rDone"), dl, 0); arc($("rProg"), pl, dl);
+  $("pct").textContent = (total ? Math.round((c.done / total) * 100) : 0) + "%";
+  $("sum").textContent = total ? `${c.done} of ${total} tasks complete` : "Add a task to start tracking.";
+  $("lDone").textContent = `Done · ${c.done}`; $("lProg").textContent = `In progress · ${c.in_progress}`; $("lTodo").textContent = `To do · ${c.todo}`;
+  $("sTodo").textContent = c.todo; $("sProg").textContent = c.in_progress; $("sDone").textContent = c.done; $("sLate").textContent = c.late;
+
+  const soon = tasks.filter((t) => t.dueDate && t.status !== "done").sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5);
+  $("dueList").replaceChildren(...(soon.length ? soon.map((t) => {
+    const d = due(t.dueDate, false);
+    return h("li", { onclick: () => openDialog(t) }, h("span", { class: `dot ${t.priority}` }), h("b", {}, t.title), h("small", { class: d.late ? "late" : "" }, d.t));
+  }) : [h("p", { class: "empty" }, "Nothing due. Add a due date to a task and it will show up here.")]));
+
+  const max = Math.max(1, c.high, c.medium, c.low);
+  $("prio").replaceChildren(...[["high", "High", "var(--danger)"], ["medium", "Medium", "var(--prog)"], ["low", "Low", "var(--done)"]].map(([k, label, color]) =>
+    h("div", {}, h("div", { class: "l" }, h("span", {}, label), h("b", {}, String(c[k]))),
+      h("div", { class: "t" }, h("i", { style: `width:${(c[k] / max) * 100}%;background:${color}` })))));
+}
+
+function statusControl(t) {
+  return h("div", { class: "seg", role: "group", "aria-label": "Task status" }, ...STATUSES.map(([v, l]) =>
+    h("button", { class: t.status === v ? "on" : "", "aria-pressed": t.status === v, onclick: () => { if (t.status !== v) { updateTask(t.id, { status: v }); render(); } } }, l)));
+}
+const remove = (t) => { if (confirm("Delete this task?")) { deleteTask(t.id); render(); } };
+
+function renderList() {
+  $("tabs").replaceChildren(...FILTERS.map(([v, l]) => h("button", { role: "tab", class: filter === v ? "on" : "", "aria-selected": filter === v, onclick: () => { filter = v; render(); } }, l)));
+  const q = query.toLowerCase();
+  const vis = tasks.filter((t) => (filter === "all" || t.status === filter) && (!q || (t.title + " " + (t.description || "")).toLowerCase().includes(q)));
+  $("list").replaceChildren(...vis.map((t) => {
+    const d = t.dueDate && due(t.dueDate, t.status === "done");
+    return h("li", { class: `card task ${t.status}` },
+      h("span", { class: `dot ${t.priority}`, title: `${t.priority} priority` }),
+      h("div", {}, h("h3", {}, t.title), t.description ? h("p", {}, t.description) : null,
+        h("div", { class: "meta" }, h("span", {}, `${t.priority} priority`), d ? h("span", { class: d.late ? "late" : "" }, d.t) : null)),
+      h("div", { class: "side-r" }, statusControl(t),
+        h("div", { class: "acts" }, h("button", { class: "link", onclick: () => openDialog(t) }, "Edit"), h("button", { class: "link danger", onclick: () => remove(t) }, "Delete"))));
+  }));
+  $("empty").hidden = vis.length > 0;
+  $("empty").textContent = tasks.length ? "No tasks match this view." : "No tasks yet. Select New task to add your first one.";
+  $("clearDone").hidden = !tasks.some((t) => t.status === "done");
+}
+
+function renderBoard() {
+  $("board").replaceChildren(...STATUSES.map(([status, label]) => {
+    const items = tasks.filter((t) => t.status === status);
+    const col = h("div", { class: "col",
+      ondragover: (e) => { e.preventDefault(); col.classList.add("over"); },
+      ondragleave: () => col.classList.remove("over"),
+      ondrop: (e) => { e.preventDefault(); col.classList.remove("over"); const id = e.dataTransfer.getData("text/plain"); if (id) { updateTask(id, { status }); render(); } } },
+      h("h3", {}, label, h("span", {}, String(items.length))),
+      h("ul", {}, ...items.map((t) => {
+        const d = t.dueDate && due(t.dueDate, status === "done");
+        const sel = h("select", { "aria-label": "Move task", onchange: (e) => { updateTask(t.id, { status: e.target.value }); render(); } },
+          ...STATUSES.map(([v, l]) => h("option", { value: v, selected: v === t.status }, l)));
+        return h("li", { class: "kcard", draggable: "true",
+          ondragstart: (e) => { e.dataTransfer.setData("text/plain", t.id); e.currentTarget.classList.add("drag"); },
+          ondragend: (e) => e.currentTarget.classList.remove("drag") },
+          h("b", {}, t.title),
+          h("div", { class: "meta" }, h("span", { class: `dot ${t.priority}`, title: `${t.priority} priority` }), d ? h("span", { class: d.late ? "late" : "" }, d.t) : null),
+          h("div", { class: "acts" }, sel, h("button", { class: "link", onclick: () => openDialog(t) }, "Edit")));
+      })));
+    return col;
+  }));
+}
+
+/* ---------- add / edit dialog ---------- */
+function openDialog(t) {
+  editingId = t?.id ?? null;
+  $("dTitle").textContent = t ? "Edit task" : "New task"; $("fSubmit").textContent = t ? "Save changes" : "Add task";
+  $("fTitle").value = t?.title ?? ""; $("fDesc").value = t?.description ?? "";
+  $("fPriority").value = t?.priority ?? "medium"; $("fDue").value = t?.dueDate ?? "";
+  $("formError").hidden = true; $("dlg").showModal(); $("fTitle").focus();
+}
+$("taskForm").onsubmit = (e) => {
+  e.preventDefault();
+  const title = $("fTitle").value.trim();
+  if (!title) { $("formError").textContent = "Enter a task title."; $("formError").hidden = false; return; }
+  const v = { title, description: $("fDesc").value.slice(0, 2000), priority: $("fPriority").value, dueDate: $("fDue").value || null };
+  editingId ? updateTask(editingId, v) : createTask(v);
+  $("dlg").close(); render();
+};
+$("fCancel").onclick = () => $("dlg").close();
+$("dlg").onclick = (e) => { if (e.target === $("dlg")) $("dlg").close(); };
+$("newBtn").onclick = () => openDialog();
+$("search").oninput = (e) => { query = e.target.value; render(); };
+$("clearDone").onclick = () => {
+  const n = tasks.filter((t) => t.status === "done").length;
+  if (confirm(`Delete ${n} completed task${n === 1 ? "" : "s"}?`)) { tasks = tasks.filter((t) => t.status !== "done"); save(); render(); }
+};
+$("signOut").onclick = $("signOutM").onclick = signOut;
+
+/* ---------- login form wiring ---------- */
+function setMode(up) {
+  signup = up;
+  $("tabIn").classList.toggle("on", !up); $("tabUp").classList.toggle("on", up);
+  $("nameField").hidden = !up; $("authError").hidden = true;
+  $("aTitle").textContent = up ? "Create your account" : "Welcome back";
+  $("aSub").textContent = up ? "It takes a few seconds." : "Sign in to see your tasks.";
+  $("authSubmit").textContent = up ? "Create account" : "Sign in";
+  $("aPass").autocomplete = up ? "new-password" : "current-password";
+}
+$("tabIn").onclick = () => setMode(false); $("tabUp").onclick = () => setMode(true);
+$("authForm").onsubmit = async (e) => {
+  e.preventDefault(); $("authError").hidden = true;
+  try {
+    const u = signup ? await register($("aName").value, $("aEmail").value, $("aPass").value) : await login($("aEmail").value, $("aPass").value);
+    $("authForm").reset(); startSession(u);
+  } catch (err) { $("authError").textContent = err.message; $("authError").hidden = false; }
+};
+
+/* ---------- startup ---------- */
+const saved = store.get("tf_session", null);
+if (saved && store.get("tf_users", {})[saved.email]) startSession(saved); else showView();
+</script>
+</body>
+</html>
